@@ -16,21 +16,21 @@ import ioctl
 
 SUPPORTED_DEVICES = {
     (0x05ac, 'Apple'): (
-        (0x9215, 'Apple Studio Display 15"'),
-        (0x9217, 'Apple Studio Display 17"'),
-        (0x9218, 'Apple Cinema Display 23"'),
-        (0x9219, 'Apple Cinema Display 20"'),
-        (0x921e, 'Apple Cinema Display 24"'),
-        (0x9226, 'Apple Cinema HD Display 27"'),
-        (0x9227, 'Apple Cinema HD Display 27" 2013'),
-        (0x9232, 'Apple Cinema HD Display 30"'),
-        (0x9236, 'Apple LED Cinema Display 24"'),
+        # prod id, name, (min brightness, max brightness) or None if unknown
+        (0x9215, 'Apple Studio Display 15"', None),
+        (0x9217, 'Apple Studio Display 17"', None),
+        (0x9218, 'Apple Cinema Display 23"', None),
+        (0x9219, 'Apple Cinema Display 20"', None),
+        (0x921e, 'Apple Cinema Display 24"', None),
+        (0x9226, 'Apple Cinema HD Display 27"', None),
+        (0x9227, 'Apple Cinema HD Display 27" 2013', None),
+        (0x9232, 'Apple Cinema HD Display 30"', None),
+        (0x9236, 'Apple LED Cinema Display 24"', (0, 255)),
     ),
     (0x0419, 'Samsung Electronics'): (
         (0x8002, 'Samsung SyncMaster 757NF'),
     ),
 }
-
 
 # -------------------------------------------------------------------------------------------------
 class StructMeta(type(ctypes.Structure)):
@@ -162,7 +162,7 @@ class AppleCinemaDisplay:
         self.vendor_name = vendor_name
         self.vendor_id = vendor_id
 
-        for product_id, product_name in products:
+        for product_id, product_name, clamp in products:
             if self.device_info.product == product_id:
                 break
         else:
@@ -171,6 +171,7 @@ class AppleCinemaDisplay:
 
         self.product_name = product_name
         self.product_id = product_id
+        self.clamp = clamp or (-sys.maxsize, sys.maxsize)
 
 
         # Now that we have the number of applications, we can retrieve them
@@ -226,13 +227,14 @@ class AppleCinemaDisplay:
     def set_brightness(self, value):
         """Set the brightness value.
         """
-        print("Set brightness to", value)
         value = int(value)
-        # my monitor only allows [0, 256)
-        if value >= 256 or value < 0:
-            print("Warning: value out of range [0, 256), clamping.")
-        value = max(0, min(255, value))  # clamp to [0, 256)
-        print("Set brightness to", value)
+
+        if self.clamp:
+            lo, hi = self.clamp
+            if value > hi or value < lo:
+                print("Warning: value out of range [%d, %d), "
+                      "clamping." % (lo, hi+1))
+            value = max(lo, min(hi, value))
 
         self.usage_ref.value = value
         if fcntl.ioctl(self.device_handle, HIDIOCSUSAGE, self.usage_ref) < 0:
@@ -241,13 +243,17 @@ class AppleCinemaDisplay:
         if fcntl.ioctl(self.device_handle, HIDIOCSREPORT, self.rep_info) < 0:
             raise SystemExit("Set report failed")
 
+        return value
+
     def adjust_brightness(self, increment):
         """Apply a brightness adjustment relative to the current setting.
+        Returns the old value and the current value
         """
-        current = self.get_brightness()
-        print("Adjust brightness from", current, "by", increment)
-        current += increment
-        self.set_brightness(current)
+        old = self.get_brightness()
+        current = old + increment
+        current = self.set_brightness(current)
+
+        return old, current
 
 
 def main():
@@ -266,9 +272,8 @@ def main():
     try:
         monitor = AppleCinemaDisplay(args.device)
     except DeviceNotSupported as e:
-        print("Bad device")
         print(e)
-        sys.exit(0)
+        sys.exit(1)
 
     print('hiddev driver version: %d.%d.%d' % monitor.get_hid_driver_version())
     print('Found supported product 0x{product_id:04x} ({product_name}) of '
@@ -281,11 +286,15 @@ def main():
               "(%.0f%%)" % (100 * brightness / 256))
         sys.exit(0)
 
-    if args.brightness.startswith('+') or args.brightness.startswith('-'):
+    if args.brightness.startswith(('+', '-')):
         # increase/decrease brightness
-        monitor.adjust_brightness(int(args.brightness))
+        old, current = monitor.adjust_brightness(int(args.brightness))
+        print("Adjusted brightness from", old, "by", args.brightness, "to",
+              current)
+
     else:
-        monitor.set_brightness(int(args.brightness))
+        brightness = monitor.set_brightness(int(args.brightness))
+        print("Brightness set to %d" % brightness)
 
 
 if __name__ == '__main__':
