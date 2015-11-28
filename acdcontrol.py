@@ -142,95 +142,151 @@ BRIGHTNESS_CONTROL = 16
 USAGE_CODE = 0x820010
 # -------------------------------------------------------------------------------------------------
 
+class DeviceNotSupported(Exception):
+    pass
 
-arg_parser = argparse.ArgumentParser(
-    description='Set brightness on Apple and some other USB monitors.')
-arg_parser.add_argument('device', nargs='?', help='Path to the HID device')
-arg_parser.add_argument(
-    'brightness', nargs='?', default='',
-    help='New brightness level. If starts with +/-, it will be increased/decreased.')
-args = arg_parser.parse_args()
+class AppleCinemaDisplay:
+    def __init__(self, device):
+        self.device_handle = os.open(device, os.O_RDWR)
 
-if not args.device:
-    arg_parser.print_help()
-    sys.exit(1)
+        self.device_info = hiddev_devinfo()
+        fcntl.ioctl(self.device_handle, HIDIOCGDEVINFO, self.device_info)
 
+        for (vendor_id, vendor_name), products in SUPPORTED_DEVICES.items():
+            if self.device_info.vendor == vendor_id:
+                break
+        else:
+            raise DeviceNotSupported('Vendor %04x is not '
+                                     'supported.' % self.device_info.vendor)
 
-mode = os.O_RDWR
-device_path = args.device
+        self.vendor_name = vendor_name
+        self.vendor_id = vendor_id
 
-device_handle = os.open(device_path, mode)
+        for product_id, product_name in products:
+            if self.device_info.product == product_id:
+                break
+        else:
+            raise DeviceNotSupported('Product %04x is not '
+                                     'supported.' % self.device_info.product)
 
-version = hid_version()
-
-fcntl.ioctl(device_handle, HIDIOCGVERSION, version)
-print('hiddev driver version is %d.%d.%d' % (version.v1, version.v2, version.v3))
-
-# suck out some device information
-device_info = hiddev_devinfo()
-fcntl.ioctl(device_handle, HIDIOCGDEVINFO, device_info)
-for (vendor_id, vendor_name), products in SUPPORTED_DEVICES.items():
-    if device_info.vendor == vendor_id:
-        break
-else:
-    print('Vendor %04x is not supported.' % device_info.vendor)
-    raise SystemExit
-
-for product_id, product_name in products:
-    if device_info.product == product_id:
-        break
-else:
-    print('Product %04x is not supported.' % device_info.product)
-    raise SystemExit
-
-print('Found supported product %04x (%s) of vendor %04x (%s)' % (
-    device_info.product, product_name, device_info.vendor, vendor_name))
+        self.product_name = product_name
+        self.product_id = product_id
 
 
-# Now that we have the number of applications, we can retrieve them
-# using the HIDIOCAPPLICATION ioctl() call
-# applications are indexed from 0..{num_applications-1}
-for app_num in range(device_info.num_applications):
-    application = fcntl.ioctl(device_handle, HIDIOCAPPLICATION, app_num)
-    # The magic values come from various usage table specs
-    if (application >> 16) & 0xFF == 0x80:
-        break
-else:
-    print('The device is NOT a USB monitor!')
-    raise SystemExit
+        # Now that we have the number of applications, we can retrieve them
+        # using the HIDIOCAPPLICATION ioctl() call
+        # applications are indexed from 0..{num_applications-1}
+        for app_num in range(self.device_info.num_applications):
+            application = fcntl.ioctl(self.device_handle, HIDIOCAPPLICATION,
+                                      app_num)
+            # The magic values come from various usage table specs
+            if (application >> 16) & 0xFF == 0x80:
+                break
+        else:
+            raise DeviceNotSupported('The device is not a USB monitor.')
+
+        # Initialise the internal report structures
+        if fcntl.ioctl(self.device_handle, HIDIOCINITREPORT, 0) < 0:
+            raise SystemExit("FATAL: Failed to initialize internal report "
+                             "structures")
+
+        self.usage_ref = hiddev_usage_ref(report_type=HID_REPORT_TYPE_FEATURE,
+                                          report_id=BRIGHTNESS_CONTROL,
+                                          field_index=0, usage_index=0,
+                                          usage_code=USAGE_CODE)
+
+        self.rep_info = hiddev_report_info(report_type=HID_REPORT_TYPE_FEATURE,
+                                           report_id=BRIGHTNESS_CONTROL,
+                                           num_fields=1)
 
 
-# Initialise the internal report structures
-if fcntl.ioctl(device_handle, HIDIOCINITREPORT, 0) < 0:
-    raise SystemExit("FATAL: Failed to initialize internal report structures")
 
-usage_ref = hiddev_usage_ref(
-    report_type=HID_REPORT_TYPE_FEATURE, report_id=BRIGHTNESS_CONTROL, field_index=0,
-    usage_index=0, usage_code=USAGE_CODE)
+    def get_hid_driver_version(self):
+        version = hid_version()
+        fcntl.ioctl(self.device_handle, HIDIOCGVERSION, version)
+        return version.v1, version.v2, version.v3
 
-rep_info = hiddev_report_info(
-    report_type=HID_REPORT_TYPE_FEATURE, report_id=BRIGHTNESS_CONTROL, num_fields=1)
+    def get_product_information(self):
+        return {'product_id': self.product_id,
+                'product_name': self.product_name,
+                'vendor_id': self.vendor_id, 'vendor_name': self.vendor_name}
 
-# get current brightness
-if fcntl.ioctl(device_handle, HIDIOCGUSAGE, usage_ref) < 0:
-    raise SystemExit("Usage failed!")
-if fcntl.ioctl(device_handle, HIDIOCGREPORT, rep_info) < 0:
-    raise SystemExit("Report failed!")
+    def get_brightness(self):
+        """Return the current brightness value.
+         """
 
-print('Current brightness is: %d' % usage_ref.value)
+        if fcntl.ioctl(self.device_handle, HIDIOCGUSAGE, self.usage_ref) < 0:
+            raise SystemExit("Get usage failed")
 
-if not args.brightness:
-    sys.exit(0)
+        if fcntl.ioctl(self.device_handle, HIDIOCGREPORT, self.rep_info) < 0:
+            raise SystemExit("Get report failed")
 
-brightness = int(args.brightness)
+        return int(self.usage_ref.value)
 
-if args.brightness.startswith('+') or args.brightness.startswith('-'):
-    # increase/decrease brightness
-    brightness += usage_ref.value
+    def set_brightness(self, value):
+        """Set the brightness value.
+        """
+        print("Set brightness to", value)
+        value = int(value)
+        # my monitor only allows [0, 256)
+        if value >= 256 or value < 0:
+            print("Warning: value out of range [0, 256), clamping.")
+        value = max(0, min(255, value))  # clamp to [0, 256)
+        print("Set brightness to", value)
 
-# set brightness
-usage_ref.value = brightness = max(0, brightness)
-if fcntl.ioctl(device_handle, HIDIOCSUSAGE, usage_ref) < 0:
-    raise SystemExit("Usage failed!")
-if fcntl.ioctl(device_handle, HIDIOCSREPORT, rep_info) < 0:
-    raise SystemExit("Report failed!")
+        self.usage_ref.value = value
+        if fcntl.ioctl(self.device_handle, HIDIOCSUSAGE, self.usage_ref) < 0:
+            raise SystemExit("Set usage failed")
+
+        if fcntl.ioctl(self.device_handle, HIDIOCSREPORT, self.rep_info) < 0:
+            raise SystemExit("Set report failed")
+
+    def adjust_brightness(self, increment):
+        """Apply a brightness adjustment relative to the current setting.
+        """
+        current = self.get_brightness()
+        print("Adjust brightness from", current, "by", increment)
+        current += increment
+        self.set_brightness(current)
+
+
+def main():
+    arg_parser = argparse.ArgumentParser(
+        description='Set brightness on Apple and some other USB monitors.')
+    arg_parser.add_argument('device', nargs='?', help='Path to the HID device')
+    arg_parser.add_argument('brightness', nargs='?', default='',
+                            help='New brightness level. If starts with +/-, '
+                                 'it will be increased/decreased.')
+    args = arg_parser.parse_args()
+
+    if not args.device:
+        arg_parser.print_help()
+        sys.exit(1)
+
+    try:
+        monitor = AppleCinemaDisplay(args.device)
+    except DeviceNotSupported as e:
+        print("Bad device")
+        print(e)
+        sys.exit(0)
+
+    print('hiddev driver version: %d.%d.%d' % monitor.get_hid_driver_version())
+    print('Found supported product 0x{product_id:04x} ({product_name}) of '
+          'vendor 0x{vendor_id:04x} ({vendor_name})'
+          ''.format(**monitor.get_product_information()))
+
+    if not args.brightness:
+        brightness = monitor.get_brightness()
+        print("Current brightness level is", brightness,
+              "(%.0f%%)" % (100 * brightness / 256))
+        sys.exit(0)
+
+    if args.brightness.startswith('+') or args.brightness.startswith('-'):
+        # increase/decrease brightness
+        monitor.adjust_brightness(int(args.brightness))
+    else:
+        monitor.set_brightness(int(args.brightness))
+
+
+if __name__ == '__main__':
+    main()
