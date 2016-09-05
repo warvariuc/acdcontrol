@@ -24,6 +24,7 @@ SUPPORTED_DEVICES = {
         (0x9226, 'Apple Cinema HD Display 27"'),
         (0x9227, 'Apple Cinema HD Display 27" 2013'),
         (0x9232, 'Apple Cinema HD Display 30"'),
+        (0x9236, 'Apple LED Cinema Display 24"'),
     ),
     (0x0419, 'Samsung Electronics'): (
         (0x8002, 'Samsung SyncMaster 757NF'),
