@@ -56,7 +56,7 @@ const int STUDIO_DISPLAY_17               = 0x9217;
 const int CINEMA_DISPLAY_23_OLD           = 0x9218;
 const int CINEMA_DISPLAY_23_NEW           = 0x9218;
 const int CINEMA_DISPLAY_20_OLD           = 0x9219;
-const int CINEMA_DISPLAY_20_NEW           = 0x9219;
+const int CINEMA_DISPLAY_20_NEW           = 0x9222;
 const int CINEMA_DISPLAY_24               = 0x921e;
 const int CINEMA_DISPLAY_27               = 0x9226;
 const int CINEMA_DISPLAY_27_2013          = 0x9227;
@@ -532,8 +532,8 @@ void init_device_database() {
                                      "Apple Studio Display 15\"" ));
   supportedDevices.insert( DeviceId( APPLE, STUDIO_DISPLAY_17,
                                      "Apple Studio Display 17\"" ));
-//   supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_20_NEW,
-//                                      "Apple Cinema Display 20\" (new)" ));
+  supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_20_NEW,
+                                      "Apple Cinema Display 20\" (new)" ));
   supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_20_OLD,
                                      "Apple Cinema Display 20\" (old)" ));
 //   supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_23_NEW,
@@ -556,7 +556,6 @@ void init_device_database() {
 
   supportedDevices.insert( DeviceId( SAMSUNG, S1,
                                      "Samsung SyncMaster 757NF" ));
-
 }
 
 void dump_supported () {
