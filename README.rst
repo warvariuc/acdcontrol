@@ -17,6 +17,10 @@ Change to program directory and compile it::
 A new file ``acdcontrol`` should appear in the same directory. If compiling failed, check if you
 have installed packages necessary for compiling (e.g. ``build-essential``).
 
+or
+
+execute the ./acd-compile.sh script, that will execute the docker-compose.yml file. (requires that docker, docker-compose is installed)
+
 Usage
 -----
 
@@ -104,6 +108,18 @@ acdcontrol /dev/hiddev0 +10
 acdcontrol /dev/hiddev0 -- -10
     Decrement current brightness by 10. Please,note ``--``!
 
+
+Sample Profiles
+----------
+
+00profile-low.sh
+    Set brightness over usb to 0
+
+01profile-middle.sh
+    Set brightness over usb to 127.5
+
+02profile-high.sh
+    Set brightness over usb to 255
 
 Known Limitations
 -----------------
