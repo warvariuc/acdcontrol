@@ -1,0 +1,15 @@
+compile:
+ image: gcc:10.2
+ volumes:
+  - ".:/src:rw"
+ working_dir: /src
+ command: make
+
+execute-test-for-usb:
+ image: gcc:latest
+ volumes:
+  - ".:/src:ro"
+  - "/dev:/dev"
+ privileged: true
+ working_dir: /src
+ command: ./acdcontrol /dev/usb/hiddev0 ${brightness}
