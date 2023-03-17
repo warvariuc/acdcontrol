@@ -17,6 +17,14 @@ Change to program directory and compile it::
 A new file ``acdcontrol`` should appear in the same directory. If compiling failed, check if you
 have installed packages necessary for compiling (e.g. ``build-essential``).
 
+You can now install the program (into /usr/local/bin/) and its udev rules using
+
+    make install
+    # Reload udev configuration file
+    sudo udevadm control --reload
+    # Trigger udev rules 
+    sudo udevadm trigger
+    
 or
 
 execute the ./acd-compile.sh script, that will execute the docker-compose.yml file. (requires that docker, docker-compose is installed)
@@ -27,17 +35,6 @@ Usage
 ::
 
   ./acdcontrol [--silent|-s] [--brief|-b] [--help|-h] [--about|-a] [--detect|-d] [--list-all|-l] <hid device(s)> [<brightness>]
-
-
-NOTE: You must have write permissions to this device in order to control the display being a
-user, not root. If you have no such permissions, you can either grant read/write permission to
-the world::
-
-    sudo chmod a+rw /dev/usb/hiddevX
-
-or change the ownership::
-
-    sudo chown <your user name>:users /dev/usb/hiddevX
 
 
 NOTE: It should be safe to run the program on other device than Apple Cinema/Studio display as
@@ -67,8 +64,7 @@ Parameters
     Lists all "officially" supported monitors and quits. If you do not see the device, this does
     not mean that it won't work it simply means that I did not tested it on such a device. I'll
     appreciate if you submit your information in the forum for any display that works hid device
-    device that represents your Apple Cinema display. It should be one of ``/dev/usb/hiddevX`` or
-    ``/dev/hiddevX``.
+    device that represents your Apple Cinema display. It should be one of ``/dev/acdctlX``
 
 brightness
     When this option is specified, the operation is to set brightness, otherwise, the current
@@ -86,26 +82,23 @@ brightness
 Usage examples
 --------------
 
-In the following examples I assume that your HID device is ``/dev/hiddev0``. You may have it as
-``/dev/hiddevX`` or ``/dev/usb/hiddevX``.
-
 acdcontrol --help
     Show long help message.
 
-acdcontrol --detect /dev/hiddev*
+acdcontrol --detect /dev/acdctl*
     Perform detection, which HID device is actually your display to be controlled.
 
-acdcontrol /dev/hiddev0
+acdcontrol /dev/acdctl0
     Read current brightness parameter
 
-acdcontrol /dev/hiddev0 160
+acdcontrol /dev/acdctl0 160
     Set brightness to 160. Note, that brightness setting depends on your model. Generally, this
     parameter may get values in the range ``[0-255]``.
 
-acdcontrol /dev/hiddev0 +10
+acdcontrol /dev/acdctl0 +10
     Increment current brightness by 10.
 
-acdcontrol /dev/hiddev0 -- -10
+acdcontrol /dev/acdctl0 -- -10
     Decrement current brightness by 10. Please,note ``--``!
 
 

@@ -13,3 +13,7 @@ release:
 
 upload:
 	curl -T $(VERNAME).tar.gz ftp://anonymous@upload.sourceforge.net/incoming/
+
+install:
+	install -m 0644 -o root -g root 69-apple-cinema.rules /etc/udev/rules.d
+	install -m 0755 -o root -g root acdcontrol /usr/local/bin
