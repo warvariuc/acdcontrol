@@ -1,4 +1,3 @@
-KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9221", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9215", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9217", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9218", MODE:="666", SYMLINK+="acdctl%n"
