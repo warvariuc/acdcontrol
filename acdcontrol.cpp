@@ -54,7 +54,7 @@ const int USAGE_CODE                      = 0x820010;
 const int STUDIO_DISPLAY_15               = 0x9215;
 const int STUDIO_DISPLAY_17               = 0x9217;
 const int CINEMA_DISPLAY_23_OLD           = 0x9218;
-const int CINEMA_DISPLAY_23_ALT           = 0x921b;
+const int CINEMA_DISPLAY_20_ALT           = 0x921b;
 const int CINEMA_DISPLAY_23_NEW           = 0x921c;
 const int CINEMA_DISPLAY_20_OLD           = 0x9219;
 const int CINEMA_DISPLAY_20_NEW           = 0x9222;
@@ -539,8 +539,8 @@ void init_device_database() {
                                      "Apple Cinema Display 20\" (old)" ));
   supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_23_NEW,
                                      "Apple Cinema Display 23\" (new)" ));
-  supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_23_ALT,
-                                     "Apple Cinema Display 23\" (alt)" ));
+  supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_20_ALT,
+                                     "Apple Cinema Display 20\" (alt)" ));
   supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_23_OLD,
                                      "Apple Cinema Display 23\" (old)" ));
   supportedDevices.insert( DeviceId( APPLE, CINEMA_DISPLAY_24,
