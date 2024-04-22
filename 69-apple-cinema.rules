@@ -2,6 +2,7 @@ KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9215", MODE:="666
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9217", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9218", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9219", MODE:="666", SYMLINK+="acdctl%n"
+KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="921b", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="921c", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="921e", MODE:="666", SYMLINK+="acdctl%n"
 KERNEL=="hiddev*", ATTRS{idVendor}=="05ac", ATTRS{idProduct}=="9221", MODE:="666", SYMLINK+="acdctl%n"
